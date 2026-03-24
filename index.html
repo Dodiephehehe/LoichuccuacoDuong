@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gửi 11A1 hehe</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --env-color: #f3e5ab; 
+            --env-dark: #e5d38f;
+            --paper-color: #ffffff;
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            transition: background 0.8s ease;
+            overflow: hidden;
+            background-color: #202020;
+            color: white;
+        }
+
+        #audio-unlock {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 1000;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; font-family: 'VT323', monospace; font-size: 30px;
+        }
+
+        #game-container {
+            position: relative; width: 100%; height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        .screen { 
+            display: none; width: 100%; height: 100vh;
+            position: absolute; left: 0; top: 0;
+            animation: fadeIn 0.5s; 
+            flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        .active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .npc-character { height: 200px; image-rendering: pixelated; margin-bottom: 20px; }
+
+        .dialogue-box {
+            background: #000; border: 4px solid #fff; padding: 20px;
+            width: 85%; max-width: 500px; min-height: 100px;
+            font-family: 'VT323', monospace; color: #fff; font-size: 26px;
+            position: relative; box-shadow: 10px 10px 0px rgba(0,0,0,0.5);
+        }
+
+        .choices { margin-top: 20px; display: flex; gap: 15px; justify-content: center; }
+
+        .pixel-btn {
+            background: #000; color: #fff; border: 2px solid #fff;
+            padding: 10px 20px; font-family: 'VT323', monospace;
+            font-size: 22px; cursor: pointer; text-transform: uppercase;
+            /* Thêm transition để nút lướt đi mượt hơn */
+            transition: left 0.1s ease-out, top 0.1s ease-out;
+        }
+        .pixel-btn:hover { background: #fff; color: #000; }
+
+        .input-box {
+            background: rgba(255, 255, 255, 0.95); padding: 40px; border-radius: 15px;
+            text-align: center; color: #333;
+            transform: translateY(-150px);
+        }
+        input { padding: 12px; font-size: 18px; border: 2px solid #ddd; border-radius: 8px; width: 250px; display: block; margin: 20px auto; text-align: center; }
+        .confirm-btn { padding: 12px 35px; font-size: 18px; background: #e74c3c; color: white; border: none; border-radius: 8px; cursor: pointer; }
+
+        .envelope-wrapper { position: relative; width: 300px; height: 200px; background: var(--env-dark); cursor: pointer; animation: float 3s infinite ease-in-out; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        .paper { position: absolute; bottom: 5px; left: 10px; width: 280px; height: 180px; background: var(--paper-color); z-index: 1; transition: transform 0.8s ease-in-out 0.5s; }
+        .flap { position: absolute; top: 0; left: 0; width: 0; height: 0; border-left: 150px solid transparent; border-right: 150px solid transparent; border-top: 100px solid var(--env-color); z-index: 3; transform-origin: top; transition: transform 0.5s ease-in-out; }
+        .pocket { position: absolute; bottom: 0; left: 0; width: 0; height: 0; border-left: 150px solid var(--env-color); border-right: 150px solid var(--env-color); border-bottom: 100px solid var(--env-dark); border-top: 100px solid transparent; z-index: 2; }
+        .envelope-wrapper.open .flap { transform: rotateX(180deg); z-index: 0; }
+        .envelope-wrapper.open .paper { transform: translateY(-100px); }
+
+        .letter-paper { background: #fff; padding: 40px; width: 85%; max-width: 500px; margin: 0 auto; border-radius: 5px; color: #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); border-top: 8px solid var(--env-dark); overflow-y: auto; max-height: 80vh; }
+        .message { font-size: 18px; line-height: 1.6; white-space: pre-line; text-align: left; }
+    </style>
+</head>
+<body>
+
+    <div id="audio-unlock">NHẤN VÀO ĐÂY ĐỂ BẮT ĐẦU...</div>
+
+    <div id="game-container">
+        <div id="screen-npc" class="screen">
+            <img src="character.png" class="npc-character" alt="Character">
+            <div class="dialogue-box">
+                <div id="npc-text"></div>
+                <div class="choices" id="npc-choices" style="visibility: hidden;">
+                    <button class="pixel-btn" onclick="goToInput()">Cảm động chứ</button>
+                    <button class="pixel-btn" id="btn-runaway">Cũng bình thường thôi</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen1" class="screen">
+            <div class="input-box">
+                <h2>Nhập cả họ và tên để nhận lời chúc nhé</h2>
+                <input type="text" id="nameInput" placeholder="Ví dụ: Nguyễn Văn A">
+                <button class="confirm-btn" onclick="checkName()">Xác nhận</button>
+            </div>
+        </div>
+
+        <div id="screen2" class="screen">
+            <div class="envelope-wrapper" id="envelope" onclick="openAndShow()">
+                <div class="flap"></div>
+                <div class="paper"></div>
+                <div class="pocket"></div>
+            </div>
+            <p style="color: white; margin-top: 50px; font-size: 20px; font-weight: bold; text-align: center;">Bấm vào phong bì để mở thư nhé!</p>
+        </div>
+
+        <div id="screen3" class="screen">
+            <div class="letter-paper">
+                <h2>Gửi: <span id="nameDisplay"></span></h2>
+                <p class="message" id="msgDisplay"></p>
+                <button class="confirm-btn" style="margin-top: 20px; background: #333;" onclick="location.reload()">Quay lại</button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="blip" src="blip.mp3"></audio>
+    <audio id="music" src="music.mp3" loop></audio>
+
+    <script>
+        const studentData = {
+            "Nguyễn Đức Anh A": "Em là một lớp trưởng rất tuyệt đấy, quyền uy cũng thét ra lửa đó! Luôn nhiệt tình, năng nổ và hết mình vì lớp. Chúc em học thật tốt, luôn vui vẻ và ngày càng “xịn” hơn nữa nha!!!",
+"Nguyễn Đức Anh B": "Gặp nhau là cái duyên học tập,làm việc vs nhau và lưu giữ những kỉ niệm là đáng quý. Chúc em được 10đ Toán, và phá rào môn Tiếng Anh nhé.",
+"Nguyễn Ngọc Mai Anh": "Em là 1 cô gái rất đáng yêu, cố gắng chinh phục bộ môn Văn-Hóa nhé. Chúc em sẽ đỗ vào trường đại học mơ ước nhaaaaaa",
+"Phùng Quang Anh": "Toán, Lí, Văn, Anh kinh khủng đấy. Hi vọng em sẽ luôn giữ được ngọn lửa với Vật Lí, chúc em đạt được nhiều thành công nhe",
+"Vũ Trần Gia Bảo": "Cô mong rằng em sẽ dần tự tin hơn thoải mái nói chuyện cùng các bạn, bước ra khỏi vùng an toàn và thể hiện bản thân mình nhiều hơn nhé. Chúc em sẽ đỗ vào ngôi trường đại học mơ ước nhé. <Nếu có thể hãy đề xuất cho cô 1 vài bài nhạc he>",
+"Nguyễn Thanh Bình": "Một cô gái năng động cute. Cố gắng lên, muốn giàu bền vững thì phải giỏi <3",
+"Phan Nguyễn Y Bình": "Mê ngủ không xấu mà đừng  gục trong tiết nheeeee. Chúc em giữ được niềm yêu thích mônVật lí, vượt qua tiếng anh he. <<rồi ai cũng cần học TA thoi>>",
+"Ngô Cao Hùng Cường": "Thông minh logic có thừa, nhưng bớt nghịch điện thoại lại nhé :((( Học nên có thời gian biểu thì mới hiệu quả, nhưng đừng bỏ bê việc học Văn nhe!  Cố lên tân thủ khoa HUST nhé! (hay làm bộ đội cũng vui mà) ",
+"Nguyễn Văn Đại": "Văn nghệ, thể dục thể thao là cũng giỏi đấy. Có tố chất nghệ sĩ đấy, chúc em học giỏi, để thực hiện ước mơ  thủa bé thơ và chăm lo đầy đủ cho gia đình nhé. ",
+"Lê Minh Đức": "Thể dục thể thao nâng cao sức khỏe. Chúc em luôn tự tin, chăm chỉ và đạt được mục tiêu mình đặt ra. Cố gắng chinh phục Hóa nhé!",
+"Lê Đắc Hoàng Dương": "Nhanh gọn, logic. Cố lên nhé, chúc em đạt được mục tiêu 80+ TSA",
+"Phạm Mỹ Duyên": "Cô gái xinh đẹp, đáng iêu và rất duyên. Chúc em xinh đẹp, zui zẻ, học giỏi đặc biệt là chinh phục toán nhé (bới nó ko tha mình đôu). Cố lên cánh cửa các đại học danh tiếng đón chờ",
+"Đỗ Quỳnh Hân": "Cô gái năng nổ, vui vẻ, hoạt bát, siêu dth và trách nhiệm (cũng là 1 cán bộ tài năng, quyền uy thét ra lửa đấy). Hãy luôn phát huy tinh thần này nhé và trong tương lai mong rằng chúng ta sẽ trở thành \"đồng nghiệp\"",
+"Nguyễn Vũ Thanh Hiền": "Chúc em luôn giữ được sự dễ thương và niềm vui khi đọc tiểu thuyết. Mong là em sẽ cố gắng thêm một chút mỗi ngày để sớm đạt mục tiêu IELTS 6.0 nhé!",
+"Nguyễn Hoàng Hiệp": "Đẹp zai thích lí mà cx khó khăn lí he 5050, tay game cũng không tồi đâu. Chúc Hiệp chăm ngoan học giỏi, đỗ đượt tất cả các trường trong nguyện vọng của em",
+"Nguyễn Minh Hiếu": "Thể thao Esports cũng hay đấy. Chúc em học giỏi và từng bước chinh phục mục tiêu của mình nhé",
+"Nguyễn Duy Hoàng": "Đẹp zai, zui zẻ, hòa đồng. Hãy duy trì niềm đam mê, cố gắng đánh gục hóa nhé. Chúc chú bộ đội tương lai thành công trên con đường mình chọn nha!",
+"Đỗ Xuân Hùng": "Hoàng tử Hùng luôn cơ đấy :((( đẹp zai thì có thừa mà tiếng anh thì cần cải thiện. Chúc em luôn giữ được sự chăm chỉ và tinh thần học hỏi, những cố gắng hôm nay sẽ là thành công của ngày mai. Không biết tới bây giờ cô có thể nghe được điều e muôna nói vs giáo sinh chưa????",
+"Lê Quang Huy": "Sai đẹp triêu luôn đấy! Chúc em luôn giữ tinh thần cố gắng, học hỏi mỗi ngày và dần trở thành phiên bản tốt hơn của chính mình và trở thành tân sinh viên HUST nha.",
+"Trần Khánh Hưng": "Văn thì hay rồi, cố gắng chinh phục thêm Hóa cho đủ bộ nhe :))) Chúc em giữ vững quyết tâm, từng bước chinh phục mục tiêu của mình và tương lai mua được BMW (hoặc cũng có thể là hãng xe mắc hơn) nhé",
+"Lê Minh Khang": "Miêu tả về bản thân \"Cao, khỏe\" thì dễ hiểu nhưng còn \"Lê\" thì shao??? Chúc em sớm ngày đánh bại được Hóa, luôn giữ tinh thần học hỏi, cố gắng mỗi ngày và đỗ vào trường đại học mơ ước nhe!",
+"Nguyễn Đình Gia Khánh": "Bấc ngờ vì e thích môn Tin học đấy (tại lập trình nó khó não cô từ chối tiếp nhận….), mà hơi tiếc lớp lại không học môn này :(((. Chúc em giữ vững quyết tâm và từng bước chinh phục mục tiêu của mình nhé <Cố lên, biết đâu IT1 HUST>",
+"Trần Nguyễn Ngọc Khánh": "Cô cũng thích môn nào được chơi nhèo :(((( Nhưng học ít mà muốn điểm cao thì khó….(nếu được cô cũm mún). Chúc em tương lai kiếm được nhiều xèng đi du lịch vòng quanh thế giới nhaaa <nhưng trước hết học đã rồi đi, ít nhất mình cũng phải biết ít tiếng đã :(((>",
+"Văn Thị Phương Linh": "Môn nào cũng sợ là shao :(((( mình phải làm chủ nó chứ đừng để nó thao túng mềnh chớ. Chúc em luôn tự tin, chăm chỉ và đạt được mục tiêu mình đặt ra nhé (Vượt qua nỗi sợ rồi NEU hay HUST… cũng chỉ là cái tên thôi)",
+"Hàn Đình Nhật Minh": "Ước mơ hơi lạ (chắc ở nhà phải rửa bát nhèo hả!) Chúc em giữ vững quyết tâm và từng bước chinh phục mục tiêu của mình và mua được cả xe container máy rửa bát nhé.",
+"Nguyễn Tuấn Minh": "Hy vọng em sẽ ngày càng tự tin hơn và dám thử những điều mới để khám phá khả năng của bản thân (đừng hướng nội, hướng tùm lum lên đi em). Chúc em thực hiện được mục tiêu của bản thân nhé!",
+"Trần Tuấn Minh": "Chúc em giữ vững quyết tâm và từng bước chinh phục mục tiêu của mình. Cô không thấy tờ phiếu khảo sát của em đâu, có thể do form bị lỗi hoặc do em không điền (bùn :( )",
+"Đặng Thị Hà My": "Ôi hiếm mà có bạn chung sở thích với cô thý hẹ hẹ hẹ!!!!!!! Chúc em luôn giữ vững niềm đam mê này nha, nhưng đừng quên học nha, cố lên vì tương lai xây nhà lầu mua xe hơi",
+"Lưu Hà My": "Xinh xắn, năng động, cte, hoạt bát, yêu đời, 10 điểm không có nhưng. À không có nhưng, nhưng phải cố gắng chăm chỉ, học giỏi nheeee còn kiếm vài cái học bổng đi học Trung cho sĩ với đời kkkk",
+"Nguyễn Bảo Nam": "Chúc em luôn giữ tinh thần cố gắng, học hỏi mỗi ngày và dần trở thành phiên bản tốt hơn của chính mình (học giỏi đi r tiền khác tự bơi đến tìm). Có khi nào kết hợp vẽ và đọc truyện thành 1 không??? Hi vọng cô có thể được đọ 1 mẩu truyện ngắn e tự sáng tác",
+"Bùi Kim Ngân": "Cô mà giàu cô cũng thích nằm, ngủ và ăn nhưng mà cô nghèo :((((( Chúc Ngân chăm ngoan học giỏi, đỗ đượt tất cả các trường trong nguyện vọng của em",
+"Nguyễn Thị Thảo Nguyên": "Nhí nhảnh dễ thương, khéo tay hay làm (cô cũng muốn học móc len lắm, mà cô chỉ bt đan len cơ bản) NHƯNG MÀ ngồi trong lớp không tạp trung!!!!!!!!!! Chúc Nguyên luôn giữ tinh thần học hỏi, cố gắng mỗi ngày và tin vào khả năng của mình, cao hơn và học giỏi để được mua điện thoài, mua xe, mua tất tần tật mọi thứ mong muốn nhớ!",
+"Nguyễn Duy Phong": "Muốn giỏi Lí thì phải yêu Lí thật nhiều vào. Chúc em mãi giữ được đam mê với Vật Lí nhé, cố gắng vững tin vào bản thân và đạt được điều mình mong muốn nha!",
+"Nguyễn Lê Nhật Quang": "Một chàng trai hiền hòa, hơi e dè 1 chút, mà hơi tiếc vì không hể đồng hành được em trong đt thi cấp cụm nhưng không sao năm sau mình làm lại! Cố lên! Chúc em luôn mạnh mẽ, kiên trì và không bỏ cuộc trước những mục tiêu mà mình đặt ra (ráng học cẩn thận đừng để bị thu đt nhé!)",
+"Nguyễn Thị Thanh Thảo": "Cô nàng Tổ trưởng tốt bụng nhưng mà tổ trưởng phải làm tốt vai trò nha (đừng để đi dọn vs nữa, chức vụ cao thì trách nhiệm cao nghe chưaaaaa). Chúc em sớm trở thành nhà tư bản như mong ước nhe",
+"Đào Hiền Thư": "Nhỏ nhắn, xinh xắn, dễ thương lắm nà. Chúc Thư vừa học tốt vừa tận hưởng trọn vẹn những năm tháng học trò và có thể đạt được những mục tiêu mà mình đề ra (hình như e là bạn hỏi c cái trâm (c ko có nhớ e hay duyên, c bị nhầm 2 bạn) hơi tiếc vì c đặt về ko kịp (tại cái c xài nó bị bung mất hạt trân châu nên khum tặng được hmu)",
+"Nguyễn Anh Thư": "Thích tin học cũng wao đấy, hiếm mà có bạn nữ đam mê theo đuổi cái lập trình code khó nhằn nàyyyyyy. Chúc em luôn giữ tinh thần học hỏi, cố gắng mỗi ngày và tin vào khả năng của mình, biết đâu tân sinh viên HUST ngàng IT1 he!!!",
+"Nguyễn Vi Toản": "Mong rằng sau này khi trưởng thành, em sẽ tự hào vì những cố gắng của bản thân ngày hôm nay, tìm được định hướng cho mình.",
+"Phạm Phương Trà": "Cô cũng thích polime và môn nào điểm cao cô cũng thích. Chúc em giữ vững quyết tâm và từng bước chinh phục mục tiêu của mình",
+"Nguyễn Duy Trường": "Tự tin đẹp zai có thừa, thêm tí kiến thức là khối em mê. Chúc em luôn tiến bộ từng ngày và đạt được những kết quả tốt hơn trong thời gian tới",
+"Phùng Khắc Tuân": "Em là một thành viên rất đặc biệt của lớp. Hy vọng rằng những năm tháng học sinh sẽ trở thành một kỷ niệm thật đẹp đối với em, chúc em luôn là một người tử tế, chăm chỉ và sống hết mình với những điều mình lựa chọn.",
+"Đặng Anh Tuấn": "Đẹp troai, hoạt ngôn mà hơi tiếc vì cô không nhận được phiếu của em :((. Chúc em luôn tự tin, chăm chỉ và đạt được mục tiêu mình đặt ra nhé",
+"Nguyễn Ngọc Tuấn": "Thể thao Esports cũng hay đấy. Hy vọng em sẽ ngày càng tự tin hơn và dám thử những điều mới để khám phá khả năng của bản thân nha.",
+"Vũ Trí Minh Tuấn": "Chúc em luôn giữ tinh thần học hỏi, cố gắng mỗi ngày và tin vào khả năng của mình và đạt được mọi dự định trong tương lai nhé (nhưng hơi bùn vì cô không nhận được phiếu của bạnTT)",
+"Võ Quang Vinh": "Hãy mạnh dạn tin vào bản thân, chăm chỉ học tập và em sẽ đạt được điều mình mong muốn (Có làm phụ hồ thì cũng phải học để làm thợ chính nha)",
+"Lê Quang Việt": "Nhoi lắm!!!!!! Chúc em luôn tiến bộ từng ngày và đạt được những kết quả tốt hơn trong thời gian tới và luôn sống hạnh phúc nha!!!",
+"Tô Hiến Bách Khoa": "Chúc em luôn giữ tinh thần cố gắng, học hỏi mỗi ngày và dần trở thành phiên bản tốt hơn của chính mình và kiếm được 100000000000 tỷ hay nhiều số 0 hơn nữa",
+"Nguyễn Thịc Ngọc Bích": "Tuy là 1 thành viên gia nhập lớp hơi muộn nhưng mong em sẽ có nhiều kỉ niệm cùng lớp nha. Chúc em luôn tự tin, chăm chỉ và đạt được mục tiêu mình đặt ra."
+        };
+
+        let current = { name: "", msg: "" };
+        const blip = document.getElementById('blip');
+        const music = document.getElementById('music');
+        const introMsg = "Hi, hôm nay là 27/03/2026 là buổi cuối cùng trong thời gian thực tập rồi của cô rồi, nhanh nhỉ? Cô có vài lời chúc muốn gửi tới từng bạn trong lớp và chắc chắn trong đó không thể thiếu em, CẢM ĐỘNG KHÔNG?";
+
+        // --- MỞ KHÓA ÂM THANH ---
+        document.getElementById('audio-unlock').addEventListener('click', function() {
+            this.style.display = 'none';
+            switchScreen('screen-npc');
+            typeWriter(introMsg, 0, () => {
+                document.getElementById('npc-choices').style.visibility = 'visible';
+                setupRunawayButton();
+            });
+        });
+
+        function switchScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function typeWriter(text, i, cb) {
+            const npcText = document.getElementById('npc-text');
+            if (i === 0) blip.play().catch(()=>{});
+
+            if (i < text.length) {
+                npcText.innerHTML += text.charAt(i);
+                setTimeout(() => typeWriter(text, i + 1, cb), 50);
+            } else {
+                blip.pause();
+                blip.currentTime = 0;
+                if (cb) cb();
+            }
+        }
+
+        // --- HÀM NÚT BỎ QUA CHẠY TRỐN (PC & MOBILE) ---
+        function setupRunawayButton() {
+            const runBtn = document.getElementById('btn-runaway');
+            
+            const runawayAction = (e) => {
+                if (e) e.preventDefault(); // Cực kỳ quan trọng để chặn click trên mobile
+                
+                const maxX = window.innerWidth - runBtn.offsetWidth - 20;
+                const maxY = window.innerHeight - runBtn.offsetHeight - 20;
+                
+                const newX = Math.max(10, Math.random() * maxX);
+                const newY = Math.max(10, Math.random() * maxY);
+                
+                runBtn.style.position = 'fixed';
+                runBtn.style.left = newX + 'px';
+                runBtn.style.top = newY + 'px';
+                runBtn.style.zIndex = '9999';
+            };
+
+            // Di chuột (PC)
+            runBtn.addEventListener('mouseover', runawayAction);
+            // Chạm vào (Điện thoại)
+            runBtn.addEventListener('touchstart', runawayAction);
+            // Click (Nếu lỡ bấm trúng)
+            runBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                runawayAction();
+                alert("Không bỏ qua được đâu em ơi! :v");
+            });
+        }
+
+        function goToInput() {
+            document.body.style.background = "url('bg1.jpg') no-repeat center center/cover";
+            switchScreen('screen1');
+        }
+
+        function checkName() {
+            const val = document.getElementById('nameInput').value.trim();
+            const found = Object.keys(studentData).find(n => n.toLowerCase() === val.toLowerCase());
+            if (found) {
+                current.name = found; 
+                current.msg = studentData[found];
+                document.body.style.background = "#1a1a1a";
+                switchScreen('screen2');
+            } else { 
+                alert("Viết sai tên à? Thử lại đi em :v"); 
+            }
+        }
+
+        function openAndShow() {
+            document.getElementById('envelope').classList.add('open');
+            setTimeout(() => {
+                document.body.style.background = "url('bg2.jpg') no-repeat center center/cover";
+                switchScreen('screen3');
+                document.getElementById('nameDisplay').innerText = current.name;
+                document.getElementById('msgDisplay').innerText = current.msg;
+                music.play().catch(()=>{});
+                
+                const end = Date.now() + 2000;
+                (function frame() {
+                    confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 } });
+                    confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 } });
+                    if (Date.now() < end) requestAnimationFrame(frame);
+                }());
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
